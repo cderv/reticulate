@@ -214,24 +214,21 @@ eng_python_matplotlib_show <- function(plt, options) {
   # base.fir and fig.path are relative to output.dir to ensure that figures are
   # generated in the same location where R figures might normally
   # be generated
-  oldwd <- setwd(knitr::opts_knit$get("output.dir"))
-  on.exit(setwd(oldwd), add = TRUE)
-  # If set, works within the knitr 'base dir'
   # https://github.com/rstudio/reticulate/issues/645
-  base_dir <- knitr::opts_knit$get("base.dir")
-  if (is.character(base_dir)) {
-    if (!file_test("-d", base_dir)) dir.create(base_dir, recursive = TRUE)
-    owd <- setwd(base_dir)
-  }
-  
-  plot_counter <- yoink("knitr", "plot_counter")
-  path <- knitr::fig_path(options$dev, number = plot_counter())
-  if (!file_test("-d", dirname(path))) {
-    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  }
-  plt$savefig(path, dpi = options$dpi)
-  plt$clf()
-  knitr::include_graphics(path)
+  dir <- knitr::opts_knit$get("output.dir")
+  owd <- setwd(dir)
+  on.exit(setwd(owd), add = TRUE)
+  in_base_dir <- yoink("knitr", "in_base_dir")
+  in_base_dir({
+    plot_counter <- yoink("knitr", "plot_counter")
+    path <- knitr::fig_path(options$dev, options, number = plot_counter())
+    if (!file_test("-d", dirname(path))) {
+      dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    }
+    plt$savefig(path, dpi = options$dpi)
+    plt$clf()
+    knitr::include_graphics(path)
+  })
   
 }
 
@@ -281,7 +278,6 @@ eng_python_initialize_matplotlib <- function(options, context, envir) {
     # call hook to generate plot
     hook <- getOption("reticulate.engine.matplotlib.show", eng_python_matplotlib_show)
     graphic <- hook(plt, options)
-
     # update set of pending plots
     context$pending_plots[[length(context$pending_plots) + 1]] <<- graphic
 
