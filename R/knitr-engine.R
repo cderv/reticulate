@@ -210,14 +210,15 @@ eng_python_initialize <- function(options, context, envir) {
 
 eng_python_matplotlib_show <- function(plt, options) {
   
-  # engine works in the knitr 'root dir' but 
-  # base.fir and fig.path are relative to output.dir to ensure that figures are
-  # generated in the same location where R figures might normally
-  # be generated
+  # knitr engines works in the knitr 'root dir' (see knitr:::input_dir) but
+  # fig.path is relative to output.dir, set by rmarkdown to document directory.
+  # python engine must ensure that figures are generated in the same location
+  # where R figures might normally be generated
   # https://github.com/rstudio/reticulate/issues/645
   dir <- knitr::opts_knit$get("output.dir")
   owd <- setwd(dir)
   on.exit(setwd(owd), add = TRUE)
+  # this allow to support advanced base.dir option from knitr
   in_base_dir <- yoink("knitr", "in_base_dir")
   in_base_dir({
     plot_counter <- yoink("knitr", "plot_counter")
