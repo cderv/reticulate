@@ -210,21 +210,25 @@ eng_python_initialize <- function(options, context, envir) {
 
 eng_python_matplotlib_show <- function(plt, options) {
   
-  # work within the knitr 'base dir', to ensure that figures are
+  # engine works in the knitr 'root dir' but 
+  # base.fir and fig.path are relative to output.dir to ensure that figures are
   # generated in the same location where R figures might normally
   # be generated
-  #
+  oldwd <- setwd(knitr::opts_knit$get("output.dir"))
+  on.exit(setwd(oldwd), add = TRUE)
+  # If set, works within the knitr 'base dir'
   # https://github.com/rstudio/reticulate/issues/645
-  dir <- knitr::opts_knit$get("output.dir")
-  if (is.character(dir)) {
-    dir.create(dir, recursive = TRUE)
-    owd <- setwd(dir)
-    on.exit(setwd(owd), add = TRUE)
+  base_dir <- knitr::opts_knit$get("base.dir")
+  if (is.character(base_dir)) {
+    if (!file_test("-d", base_dir)) dir.create(base_dir, recursive = TRUE)
+    owd <- setwd(base_dir)
   }
   
   plot_counter <- yoink("knitr", "plot_counter")
   path <- knitr::fig_path(options$dev, number = plot_counter())
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file_test("-d", dirname(path))) {
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  }
   plt$savefig(path, dpi = options$dpi)
   plt$clf()
   knitr::include_graphics(path)
